@@ -1,0 +1,8 @@
+#!/bin/sh
+module="scull"
+device="scull"
+
+# remove stale nodes
+rm -f /dev/${device}[0-3]
+
+/sbin/rmmod $module $* || exit 1
