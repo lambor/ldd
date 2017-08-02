@@ -23,6 +23,9 @@ ssize_t scull_write(struct file *filp,const char __user *buf,size_t count,loff_t
 int scull_open(struct inode *inode,struct file *filp);
 int scull_release(struct inode *inode, struct file *filp);
 
+extern int scull_p_init(dev_t first_devno);
+extern void scull_p_exit(void);
+
 struct file_operations scull_fops = {
 	.owner = THIS_MODULE,
 	//.llseek = scull_llseek,
@@ -232,6 +235,8 @@ static int __init scull_init(void)
 		sema_init(&scull_devices[i].sem,1);
 		scull_setup_dev(&scull_devices[i],i);
 	}
+	dev += scull_nr_devs;
+	dev += scull_p_init(dev);
 
 	return 0;
 
@@ -252,8 +257,9 @@ static void __exit scull_exit(void)
 		cdev_del(&scull_devices[i].cdev);	
 	}
 	kfree(scull_devices);
-
 	unregister_chrdev_region(devno,4);
+
+	scull_p_exit();
 }
 
 MODULE_LICENSE("GPL");
