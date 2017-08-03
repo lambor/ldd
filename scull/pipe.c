@@ -9,6 +9,7 @@
 #include <linux/cdev.h>
 #include <linux/mutex.h>
 #include <linux/sched.h>
+#include <linux/poll.h>
 
 #undef PDEBUG
 #ifdef SCULL_DEBUG
@@ -32,6 +33,9 @@ ssize_t scull_p_read(struct file *filp, char __user *buf,size_t count, loff_t *o
 ssize_t scull_p_write(struct file *filp,const char __user *buf,size_t count,loff_t *f_pos);
 int scull_p_open(struct inode *inode,struct file *filp);
 int scull_p_release(struct inode *inode, struct file *filp);
+static int scull_p_fasync(int fd,struct file *filp,int mode);
+static unsigned int scull_p_poll(struct file *filp, poll_table *wait);
+
 
 struct file_operations scull_p_fops = {
 	.owner = THIS_MODULE,
@@ -41,6 +45,8 @@ struct file_operations scull_p_fops = {
 	//.ioctl = scull_ioctl,
 	.open = scull_p_open,
 	.release = scull_p_release,
+	.poll = scull_p_poll,
+	.fasync = scull_p_fasync,
 };
 
 struct scull_pipe {
@@ -262,4 +268,27 @@ void scull_p_exit(void)
 	kfree(scull_p_devices);
 	unregister_chrdev_region(scull_p_devno,scull_p_nr_devs);
 	scull_p_devices = NULL;
+}
+
+static unsigned int scull_p_poll(struct file *filp,poll_table *wait)
+{
+	struct scull_pipe *dev = filp->private_data;
+	unsigned int mask = 0;
+
+	mutex_lock(&dev->mutex);
+	poll_wait(filp,&dev->inq,wait);
+	poll_wait(filp,&dev->outq,wait);
+	if(dev->rp != dev->wp)
+		mask |= POLLIN | POLLRDNORM;
+	if(spacefree(dev))
+		mask |= POLLOUT | POLLWRNORM;
+	mutex_unlock(&dev->mutex);
+	return mask;
+}
+
+static int scull_p_fasync(int fd, struct file *filp, int mode)
+{
+	struct scull_pipe *dev = filp->private_data;
+
+	return fasync_helper(fd, filp, mode, &dev->async_queue);
 }
