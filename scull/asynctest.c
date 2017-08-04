@@ -26,7 +26,7 @@ int main(int argc,char argv)
     sigaction(SIGIO,&action,NULL);
     
     fcntl(STDIN_FILENO,F_SETOWN,getpid());
-    fcntl(STDIN_FILENO,F_SETFL,fcntl(STDIN_FILENO,F_GETFL)|F_ASYNC);
+    fcntl(STDIN_FILENO,F_SETFL,fcntl(STDIN_FILENO,F_GETFL)|FASYNC);
 
     while(1) {
         sleep(86400);
