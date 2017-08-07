@@ -9,22 +9,19 @@
 #include <linux/cdev.h>
 #include <linux/semaphore.h>
 
+#include "scull.h"
+
+int scull_quantum = 4000;
+int scull_qset = 1000;
+int scull_nr_devs = 4;
+
 static int scull_major = 0;
 static int scull_minor = 0;
 
-const int scull_quantum = 4000;
-const int scull_qset = 1000;
-const int scull_nr_devs = 4;
-
 struct scull_dev *scull_devices;
 
-ssize_t scull_read(struct file *filp, char __user *buf,size_t count, loff_t *offp);
-ssize_t scull_write(struct file *filp,const char __user *buf,size_t count,loff_t *f_pos);
 int scull_open(struct inode *inode,struct file *filp);
 int scull_release(struct inode *inode, struct file *filp);
-
-extern int scull_p_init(dev_t first_devno);
-extern void scull_p_exit(void);
 
 struct file_operations scull_fops = {
 	.owner = THIS_MODULE,
@@ -34,21 +31,6 @@ struct file_operations scull_fops = {
 	//.ioctl = scull_ioctl,
 	.open = scull_open,
 	.release = scull_release,
-};
-
-struct scull_qset {
-	void **data;
-	struct scull_qset *next;
-};
-
-struct scull_dev {
-	struct scull_qset *data;
-	int quantum;
-	int qset;
-	unsigned long size;
-	unsigned int access_key;
-	struct semaphore sem;
-	struct cdev cdev;
 };
 
 int scull_trim(struct scull_dev *dev) {
@@ -237,7 +219,7 @@ static int __init scull_init(void)
 	}
 	dev += scull_nr_devs;
 	dev += scull_p_init(dev);
-
+	dev += scull_access_init(dev);
 	return 0;
 
 free_chrdev:
@@ -260,6 +242,7 @@ static void __exit scull_exit(void)
 	unregister_chrdev_region(devno,4);
 
 	scull_p_exit();
+	scull_access_cleanup();
 }
 
 MODULE_LICENSE("GPL");

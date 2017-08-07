@@ -11,7 +11,7 @@ endif
 ccflags-y += $(DEBFLAGS)
 
 ifneq ($(KERNELRELEASE),)
-	scull-objs := main.o pipe.o
+	scull-objs := main.o pipe.o access.o
 	obj-m := scull.o
 
 else

@@ -11,16 +11,7 @@
 #include <linux/sched.h>
 #include <linux/poll.h>
 
-#undef PDEBUG
-#ifdef SCULL_DEBUG
-#ifdef __KERNEL__
-#define PDEBUG(fmt, args...) printk(KERN_DEBUG "scull: " fmt, ##args)
-#else
-#define PDEBUG(fmt, args...) fprintf(stderr, fmt, ##args)
-#endif
-#else
-#define PDEBUG(fmt, args...) /* not debugging: nothing */
-#endif
+#include "scull.h"
 
 const int scull_p_nr_devs = 4;
 const int scull_p_buffer =  4000;
